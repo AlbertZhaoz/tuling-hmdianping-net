@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "com.hmdp", "com.hmdp\com.hmdp.csproj", "{58985A7D-0F29-4D60-8853-C5F339949EF8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "com.hmdp.test", "com.hmdp.test\com.hmdp.test.csproj", "{B6F58FFB-966D-4D13-BDC3-61A901D99908}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{58985A7D-0F29-4D60-8853-C5F339949EF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58985A7D-0F29-4D60-8853-C5F339949EF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58985A7D-0F29-4D60-8853-C5F339949EF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58985A7D-0F29-4D60-8853-C5F339949EF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6F58FFB-966D-4D13-BDC3-61A901D99908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6F58FFB-966D-4D13-BDC3-61A901D99908}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6F58FFB-966D-4D13-BDC3-61A901D99908}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6F58FFB-966D-4D13-BDC3-61A901D99908}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

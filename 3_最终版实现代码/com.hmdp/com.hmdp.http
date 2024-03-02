@@ -1,0 +1,6 @@
+@com.hmdp_HostAddress = http://localhost:5163
+
+GET {{com.hmdp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
