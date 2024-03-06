@@ -1,5 +1,12 @@
 # hm-dianping-net
-Redis 黑马点评项目 C# 版本实现。
+Redis 黑马点评项目 C# 版本实现。  
+
+项目如何启动：
+1. 打开【2_前端及数据库】在数据库中执行 hmdp.sql（用 MySQL 数据库）
+2. 打开【2_前端及数据库】进入到 nginx-1.18.0 文件夹下用命令行执行 `start nginx.exe`
+3. 安装 Redis，并在 Redis 命令行中执行`xgroup create streamOrders g1 0-0 MKSTREAM`创建消息队列，**注意如果你是 Windows 上安装 Redis，请确保 Redis 版本高于 5.0**(5.0 才支持消费者组消息队列和其他一些需要用到的高级功能)
+4. 打开【3_最终实现代码】修改 appsettings.json 中数据库和 Redis 的连接字符串为个人的
+5. 启动项目执行单元测试`TestMigrationShopFromDb2Redis()`将店铺数据预热到 Redis 中。
 ## 1 项目结构分析
 此后端项目是基于 .NET8 WebApi 实现的，代码在
 
