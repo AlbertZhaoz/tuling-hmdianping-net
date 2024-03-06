@@ -27,7 +27,7 @@ Redis 黑马点评项目 C# 版本实现。
 - SqlSugar.IOC：SqlSugar IOC 注入
 - SqlSugarCore：SqlSugar ORM 框架
 ### 1.2 项目目录结构分析
-![image.png](https://cdn.nlark.com/yuque/0/2024/png/957395/1709362314531-dcff1ced-2486-4d28-901b-ba1f2e459bc6.png#averageHue=%231d282b&clientId=u19bc1a3a-c834-4&from=paste&height=580&id=udc9bc84a&originHeight=725&originWidth=525&originalType=binary&ratio=1&rotation=0&showTitle=false&size=84682&status=done&style=none&taskId=ue373c6b8-c431-4dfb-afaf-b79f1289157&title=&width=420)
+![image.png](https://cdn.jsdelivr.net/gh/AlbertZhaoz/blogpic@master/工具部署/项目结构.46ljk7gbsqi0.webp)
 ## 2 核心代码
 ### 2.1 Autofac 依赖注入
 ```csharp
