@@ -1,17 +1,22 @@
 # hm-dianping-net
-Redis 黑马点评项目 C# 版本实现。  
+
+Redis 黑马点评项目 C# 版本实现。
 
 项目如何启动：
-1. 打开【2_前端及数据库】在数据库中执行 hmdp.sql（用 MySQL 数据库）
-2. 打开【2_前端及数据库】进入到 nginx-1.18.0 文件夹下用命令行执行 `start nginx.exe`
-3. 安装 Redis，并在 Redis 命令行中执行`xgroup create streamOrders g1 0-0 MKSTREAM`创建消息队列，**注意如果你是 Windows 上安装 Redis，请确保 Redis 版本高于 5.0**(5.0 才支持消费者组消息队列和其他一些需要用到的高级功能)
-4. 打开【3_最终实现代码】修改 appsettings.json 中数据库和 Redis 的连接字符串为个人的
-5. 启动项目执行单元测试`TestMigrationShopFromDb2Redis()`将店铺数据预热到 Redis 中。
+
+1. 打开【1_基础资料】在数据库中执行 hmdp.sql（用 MySQL 数据库）
+2. 打开【1_基础资料】进入到 nginx-1.18.0 文件夹下用命令行执行 `start nginx.exe`
+3. 安装 Redis（【1_基础资料】提供了 Linux 和 Windows 两个版本的 Redis，当然也可以通过 Docker 自行安装），并在 Redis 命令行中执行 `xgroup create streamOrders g1 0-0 MKSTREAM`创建消息队列，**注意如果你是 Windows 上安装 Redis，请确保 Redis 版本高于 5.0**(5.0 才支持消费者组消息队列和其他一些需要用到的高级功能)
+4. 打开【5_C# 代码】修改 appsettings.json 中数据库和 Redis 的连接字符串为个人的
+5. 启动项目执行单元测试 `TestMigrationShopFromDb2Redis()`将店铺数据预热到 Redis 中。
+
 ## 1 项目结构分析
+
 此后端项目是基于 .NET8 WebApi 实现的，代码在
 
 - [https://gitee.com/AlbertZhaoz/hm-dianping-net](https://gitee.com/AlbertZhaoz/hm-dianping-net)
 - [https://github.com/AlbertZhaoz/hm-dianping-net](https://github.com/AlbertZhaoz/hm-dianping-net)
+
 ### 1.1 依赖包使用
 
 - Autofac.Extensions.DependencyInjection：Autofac 批量依赖注入、属性注入等功能
@@ -26,10 +31,15 @@ Redis 黑马点评项目 C# 版本实现。
 - Microsoft.Extensions.DependencyInjection.Abstractions：依赖注入基础套件
 - SqlSugar.IOC：SqlSugar IOC 注入
 - SqlSugarCore：SqlSugar ORM 框架
+
 ### 1.2 项目目录结构分析
+
 ![image.png](https://cdn.jsdelivr.net/gh/AlbertZhaoz/blogpic@master/工具部署/项目结构.46ljk7gbsqi0.webp)
+
 ## 2 核心代码
+
 ### 2.1 Autofac 依赖注入
+
 ```csharp
 // 1、配置host与容器
 builder.Host
@@ -61,14 +71,14 @@ public class AutofacModuleRegister: Autofac.Module
             .Where(t => t.Name.EndsWith("Service"))
             .AsImplementedInterfaces()
             .PropertiesAutowired(new PropertySelector());
-        
+      
         // 2. 注册每一个控制器和抽象之间的关系
         var controllerBaseType = typeof(BaseController);
         builder.RegisterAssemblyTypes(typeof(AutofacModuleRegister).Assembly)
             .Where(t => controllerBaseType.IsAssignableFrom(t) && t != controllerBaseType)
             // 支持属性注入
             .PropertiesAutowired(new PropertySelector());
-        
+      
         #region 没有接口层的服务层注入
         //因为没有接口层，所以不能实现解耦，只能用 Load 方法。
         //注意如果使用没有接口的服务，并想对其使用 AOP 拦截，就必须设置为虚方法
@@ -119,7 +129,7 @@ public class AutofacModuleRegister: Autofac.Module
 [AttributeUsage(AttributeTargets.Property)]
 public class AutoWireAttribute:Attribute
 {
-    
+  
 }
 
 public class PropertySelector:Autofac.Core.IPropertySelector
@@ -130,7 +140,9 @@ public class PropertySelector:Autofac.Core.IPropertySelector
     }
 }
 ```
+
 ### 2.2 AutoMapper 映射
+
 ```csharp
 // AutoMapper Config
 builder.Services.AddutoMapperSetup();
@@ -163,7 +175,9 @@ public class AutoMapperConfig:Profile
 
 // 调用 IMapper 注入即可
 ```
+
 ### 2.3 一人一单+超卖问题实现
+
 ```csharp
 using Castle.Components.DictionaryAdapter.Xml;
 using com.hmdp.attribute;
@@ -183,7 +197,7 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
 {
     [AutoWire] public ISeckillVoucherService seckillVoucherService { get; set; }
     [AutoWire] public IDatabase redisDb { get; set; }
-    
+  
     private string luaScript = @"
             -- 0.判断消息队列是否存在，不存在则创建
             if(not redis.call('exists', KEYS[1])) then
@@ -197,7 +211,7 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
             local userId = ARGV[2]
             -- 1.3.订单id
             local orderId = ARGV[3]
-            
+          
             -- 2.数据key
             -- 2.1.库存key
             -- 'seckill:stock:'
@@ -205,7 +219,7 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
             -- 2.2.订单key
             -- 'seckill:order:'
             local orderKey = KEYS[3] .. voucherId
-            
+          
             -- 3.脚本业务
             -- 3.1.判断库存是否充足 get stockKey
             if(tonumber(redis.call('get', stockKey)) <= 0) then
@@ -225,13 +239,13 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
             redis.call('xadd', KEYS[1], '*', 'userId', userId, 'voucherId', voucherId, 'id', orderId)
             return 0
     ";
-    
+  
     public async Task<Result> SeckillVoucher(ulong voucherId)
     {
         var userId = UserHolder.GetUser().id;
         var redisIdWorker = new RedisIdWorker(redisDb);
         var orderId = redisIdWorker.NextId(RedisConst.ORDER);
-        
+      
         // 1.执行 Lua 脚本：这里面有一个消息队列，这段脚本中包含消息队列不存在则创建
         var result = await redisDb.ScriptEvaluateAsync(luaScript,
             new RedisKey[] {
@@ -239,7 +253,7 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
                 RedisConst.SECKILL_STOCK_KEY, 
                 RedisConst.SECKILL_ORDER_KEY}, 
             new RedisValue[] {voucherId, userId, orderId});
-        
+      
         // 2.解析结果
         if (result.ToString() != "0")
         {
@@ -251,6 +265,7 @@ public class VoucherOrderService:BaseService<tb_voucher_order>,IVoucherOrderServ
     }
 }
 ```
+
 ```csharp
 using System.Linq.Expressions;
 using com.hmdp.attribute;
@@ -269,7 +284,7 @@ public class SekillOrderBgService:BackgroundService
     public IVoucherOrderService _voucherOrderService { get; set; }
     public ISeckillVoucherService _seckillVoucherService { get; set; }
     public ILogger<SekillOrderBgService> _log { get; set; }
-    
+  
     public SekillOrderBgService(IDatabase redisDb, IVoucherOrderService voucherOrderService, ISeckillVoucherService seckillVoucherService, ILogger<SekillOrderBgService> log)
     {
         _redisDb = redisDb;
@@ -277,7 +292,7 @@ public class SekillOrderBgService:BackgroundService
         _seckillVoucherService = seckillVoucherService;
         _log = log;
     }
-    
+  
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (true)
@@ -288,18 +303,18 @@ public class SekillOrderBgService:BackgroundService
                 // https://github.com/StackExchange/StackExchange.Redis/issues/1109
                 var entrys = _redisDb.StreamReadGroup(
                     RedisConst.MESSAGE_STREAM_KEY, "g1", "c1", ">", 1, false);
-                    
+                  
                 // 2.判断订单信息是否为空
                 if (entrys == null || entrys.Length == 0)
                 {
                     await Task.Delay(2000);
                     continue;
                 }
-                    
+                  
                 // 3.解析出订单 id 处理订单信息
                 var entry = entrys[0];
                 var order = new tb_voucher_order();
-                
+              
                 if (entry.Values.Length > 2)
                 {
                     order.user_id = entry.Values[0].Value.ObjToLong();
@@ -308,7 +323,7 @@ public class SekillOrderBgService:BackgroundService
                     order.create_time = DateTime.Now;
                     order.update_time = DateTime.Now;
                 }
-                
+              
                 // 3.创建订单会用到分布式锁
                 await CreateVoucherOrder(order);
 
@@ -371,7 +386,7 @@ public class SekillOrderBgService:BackgroundService
 
             // 7.创建订单
             await _voucherOrderService.Add(order);
-            
+          
             // 8.提交事务
             await DbScoped.SugarScope.Ado.CommitTranAsync();
         }
@@ -388,7 +403,9 @@ public class SekillOrderBgService:BackgroundService
     }
 }
 ```
+
 ### 2.4 缓存穿透解决方案+GEO 类型使用
+
 ```csharp
 using System.Linq.Expressions;
 using System.Text.Json;
@@ -408,11 +425,11 @@ public class ShopService:BaseService<tb_shop>,IShopService
 {
     [AutoWire]
     public IDatabase RedisDb { get; set; }
-    
+  
     public async Task<Result> QueryById(long id)
     {
         var result = await QueryWithPassThrough(RedisConst.CACHE_SHOP_KEY+id,id);
-        
+      
         return result;
     }
 
@@ -424,7 +441,7 @@ public class ShopService:BaseService<tb_shop>,IShopService
         {
             return Result.Fail("id 不能小于 0");
         }
-        
+      
         // 这边要保证事务
         try
         {
@@ -451,7 +468,7 @@ public class ShopService:BaseService<tb_shop>,IShopService
             // 不需要坐标查询，按数据库查询
             var page = await base.QueryPage(a => 
                 a.typeId == (ulong)typeId, current, SystemConst.DEFAULT_PAGE_SIZE);
-            
+          
             return Result.Success(page.data);
         }
 
@@ -461,13 +478,13 @@ public class ShopService:BaseService<tb_shop>,IShopService
 
         // 3.查询redis、按照距离排序、分页。结果：shopId、distance
         string key = RedisConst.SHOP_GEO_KEY + typeId;
-        
+      
         // GEOSEARCH key BYLONLAT x y BYRADIUS 10 WITHDISTANCE
         var results = RedisDb.GeoRadius(
             key, (double)x, (double)y,5000L, GeoUnit.Meters, end, 
             Order.Ascending,
             GeoRadiusOptions.WithDistance);
-        
+      
         // 4.没有下一页了
         if (results == null && results?.Length <= from){
             return Result.Success(Enumerable.Empty<tb_shop>());
@@ -482,12 +499,12 @@ public class ShopService:BaseService<tb_shop>,IShopService
         // 5.根据id查询Shop
         Expression<Func<tb_shop,bool>> where = a => ids.Contains(a.id);
         var shops = await base.Query(where);
-        
+      
         // 6.设置距离
         foreach (var shop in shops) {
             shop.distance = distanceMap[shop.id.ToString()].Value;
         }
-        
+      
         // 6.返回
         return Result.Success(shops);
     }
@@ -502,7 +519,7 @@ public class ShopService:BaseService<tb_shop>,IShopService
         var shopCache  = RedisDb.StringGet(key);
 
         tb_shop? shop = null;
-        
+      
         // 2. 判断 shopCache 是否存在，存在则反序列化给前端
         if (!string.IsNullOrEmpty(shopCache))
         {
@@ -511,7 +528,7 @@ public class ShopService:BaseService<tb_shop>,IShopService
             {
                 return Result.Fail("查询空值，请检查 id");
             }
-            
+          
             // 3. 存在，序列化返回
             try
             {
@@ -522,9 +539,9 @@ public class ShopService:BaseService<tb_shop>,IShopService
             {
                 return Result.Fail(e.Message);
             }
-           
+         
         }
-        
+      
         // 如果缓存不存在（连空字符串都没有），则查询数据库
         shop = await base.QueryById(id);
 
@@ -534,13 +551,14 @@ public class ShopService:BaseService<tb_shop>,IShopService
             RedisDb.StringSet(key, RedisConst.CACHE_NULL_VALUE, TimeSpan.FromMinutes(2));
             return Result.Fail("店铺不存在！！");
         }
-        
+      
         // 如果存在则设置过期时间 30 分钟
         RedisDb.StringSet(key, shop.ToJsonString(), TimeSpan.FromMinutes(30));
         return Result.Success(shop);
     }
 }
 ```
+
 ### 2.5 排行榜实现 SortedSet
 
 ```csharp
@@ -569,7 +587,7 @@ public class BlogService:BaseService<tb_blog>,IBlogService
     public IFollowService followService { get; set; }
     [AutoWire]
     public IMapper mapper { get; set; }
-    
+  
     public async Task<Result> QueryHotBlog(int current)
     {
         var queryPage = await base.QueryPage(a => 
@@ -579,10 +597,10 @@ public class BlogService:BaseService<tb_blog>,IBlogService
         {
             QueryBlogUser(blog);
             IsBlogLiked(blog);
-            
+          
             return blog;
         }).ToList();
-        
+      
         return Result.Success(result);
     }
 
@@ -590,12 +608,12 @@ public class BlogService:BaseService<tb_blog>,IBlogService
     {
         // 1.查询 blog
         var blog = await base.QueryById(id);
-        
+      
         if (blog == null)
         {
             return Result.Fail("博客不存在");
         }
-        
+      
         // 2.查询 blog 有关的用户
         await QueryBlogUser(blog);
         // 3.查询 blog 是否被当前登录用户点赞
@@ -611,14 +629,14 @@ public class BlogService:BaseService<tb_blog>,IBlogService
         // 2.判断当前登录用户是否已经点赞
         var key = RedisConst.USER_BLOG_LIKE + id;
         var sortedSetScore = redisDb.SortedSetScore(key,userId);
-        
+      
         if (sortedSetScore == null) {
             // 3.如果未点赞，可以点赞
             // 3.1.数据库点赞数 + 1
             var blog = await base.QueryById(id);
             blog.liked += 1;
             bool isSuccess = await base.Update(blog);
-            
+          
             // 3.2.保存用户到Redis的set集合  zadd key value score
             if (isSuccess)
             {
@@ -644,7 +662,7 @@ public class BlogService:BaseService<tb_blog>,IBlogService
         string key = RedisConst.USER_BLOG_LIKE + id;
         // 1.查询top5的点赞用户 zrange key 0 4
         var top5 = redisDb.SortedSetRangeByRank(key, 0, 4);
-        
+      
         if (top5 == null && top5.IsNullOrEmpty()) {
             return Result.Success(Enumerable.Empty<string>());
         }
@@ -656,7 +674,7 @@ public class BlogService:BaseService<tb_blog>,IBlogService
 
         var userList = await userService.QueryByIDsWithExpression(expression);
         var userDtoList = userList.Select(x=>mapper.Map<tb_user_dto>(x)).ToList();
-        
+      
         // 4.返回
         return Result.Success(userDtoList);
     }
@@ -668,14 +686,14 @@ public class BlogService:BaseService<tb_blog>,IBlogService
         blog.userId = user.id;
         // 2.保存探店笔记
         var count = await base.Add(blog);
-        
+      
         if(count<1){
             return Result.Fail("新增笔记失败!");
         }
-        
+      
         // 3.查询笔记作者的所有粉丝 select * from tb_follow where follow_user_id = ?
         var follows = await followService.Query(x=>x.followUserId == user.id);
-        
+      
         // 4.推送笔记id给所有粉丝
         foreach (var follow in follows)
         {
@@ -685,7 +703,7 @@ public class BlogService:BaseService<tb_blog>,IBlogService
             var key = RedisConst.FEED_KEY + userId;
             redisDb.SortedSetAdd(key, blog.id, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         }
-        
+      
         // 5.返回id
         return Result.Success(blog.id);
     }
@@ -696,16 +714,16 @@ public class BlogService:BaseService<tb_blog>,IBlogService
         var userId = UserHolder.GetUser().id;
         // 2.查询收件箱 ZREVRANGEBYSCORE key Max Min LIMIT offset count
         string key = RedisConst.FEED_KEY + userId;
-        
+      
         var sortedSetEntries = redisDb.SortedSetRangeByScoreWithScores(
             key, 0, max,Exclude.Start, Order.Descending,offset,2);
 
         // 3.非空判断
         if (sortedSetEntries.IsNullOrEmpty()) {
-            
+          
             return Result.Success();
         }
-        
+      
         // 4.解析数据：blogId、minTime（时间戳）、offset
         var ids = new List<ulong>(sortedSetEntries.Length);
         long minTime = 0; // 2
@@ -758,12 +776,12 @@ public class BlogService:BaseService<tb_blog>,IBlogService
     {
         // 1. 获取当前登录用户
         var user = UserHolder.GetUser();
-        
+      
         if (user == null)
         {
             return;
         }
-        
+      
         // 2. 判断当前登录用户是否已经点赞
         var key = RedisConst.USER_BLOG_LIKE + blog.id;
         var sortedSetScore = redisDb.SortedSetScore(key,user.id);
@@ -771,14 +789,16 @@ public class BlogService:BaseService<tb_blog>,IBlogService
     }
 }
 ```
+
 ### 2.6 用户签到 BitMap 使用
+
 ```csharp
     public async Task<Result> Sign()
     {
         var (key,day) = GetSignKeyAndDay();
         // 5.签到：写入Redis SETBIT key offset 1
         RedisDb.StringSetBit(key,day-1,true);
-        
+      
         return Result.Success();
     }
 
